@@ -40,7 +40,7 @@ func (apiCfg *apiConfig) handlerForgetPassword(w http.ResponseWriter, r *http.Re
 	expiresAt := time.Now().Add(15 * time.Minute)
 
 	err = apiCfg.DB.SetResetToken(r.Context(), database.SetResetTokenParams{
-		Email: params.Email,
+		Email: user.Email,
 		ResetToken: sql.NullString{
 			String: resetToken,
 			Valid: true,
@@ -51,14 +51,31 @@ func (apiCfg *apiConfig) handlerForgetPassword(w http.ResponseWriter, r *http.Re
 		},
 	})
 
-	resetLink := fmt.Sprintf("https://localhost:8080/password-reset?token=%s",resetToken)
+	resetLink := fmt.Sprintf("https://localhost:8080/reset-password?token=%s",resetToken)
 
-	// TODO: Send email using Resend / SendGrid / Zoho
+	// TODO: will need a domain to be able to pull this off
   // For now, just log it (replace with real email service)
 
-	fmt.Printf("Reset link for %s: %s\n", user.Email, resetLink)
+	// err = apiCfg.emailService.SendResetPasswordEmail(r.Context(),user.Email,resetLink)
+	// if err != nil {
+	// 	log.Printf("failed to send email: %v\n",err)
+	// }
 
-	respondWithJSON(w,200,message)
+	// fmt.Printf("Reset link for %s: %s\n", user.Email, resetLink)
+
+	type Response struct{
+		Message string `json:"message"`
+		Token string `json:"token"`
+		ResetLink string `json:"reset_link"`
+	}
+
+	response := Response{
+		Message: "If your email is registered, you will recieve a link.",
+		Token: resetToken,
+		ResetLink: resetLink,
+	}
+
+	respondWithJSON(w,200,response)
 }
 
 func (apiCfg *apiConfig) handlerResetPassword(w http.ResponseWriter, r *http.Request) {

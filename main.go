@@ -12,12 +12,14 @@ import (
 	"github.com/go-chi/httprate"
 	"github.com/joho/godotenv"
 	"github.com/mosgizy5/auth-app/internal/database"
+	"github.com/mosgizy5/auth-app/internal/email"
 
 	_ "github.com/lib/pq"
 )
 
 type apiConfig struct {
 	DB *database.Queries
+	emailService *email.Service
 }
 
 func main() {
@@ -33,13 +35,28 @@ func main() {
 		log.Printf("DB URL not in environment")
 	}
 
+	resendKeyString := os.Getenv("resend_api_key")
+	if portString == "" {
+		log.Printf("Resend API key not in environment")
+	}
+
+	fromEmail := os.Getenv("email")
+	if portString == "" {
+		log.Printf("From email not in environment")
+	}
+
 	conn, err := sql.Open("postgres", dbUrl)
 	if err != nil {
 		log.Printf("Error connecting to the database: %v",err)
 	}
 
+	emailService := email.NewService(
+		resendKeyString,fromEmail,
+	)
+
 	apiCfg := apiConfig{
 		DB: database.New(conn),
+		emailService: emailService,
 	}
 
 	router := chi.NewRouter()
